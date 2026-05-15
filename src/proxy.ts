@@ -1,23 +1,11 @@
-import { NextResponse, type NextRequest } from "next/server";
-
-const COOKIE_NAME = "fatoora_session";
-
-export function proxy(request: NextRequest) {
-  const sessionCookie = request.cookies.get(COOKIE_NAME);
-  const isAuthed = Boolean(sessionCookie?.value);
-  const isDashboard = request.nextUrl.pathname.startsWith("/dashboard");
-  const isAuthPage = ["/login", "/signup"].includes(request.nextUrl.pathname);
-
-  if (!isAuthed && isDashboard) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-  if (isAuthed && isAuthPage) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
-  return NextResponse.next();
-}
-
-export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/signup"],
-};
+/**
+ * THIS FILE IS INTENTIONALLY EMPTY / DEPRECATED.
+ *
+ * Next.js Edge Middleware must be exported as `middleware` from
+ * `src/middleware.ts` (or the project root). This file (`src/proxy.ts`)
+ * was a duplicate that exported a function named `proxy` — it was NEVER
+ * executed by the framework.
+ *
+ * All middleware logic lives in src/middleware.ts.
+ * Do not add code here.
+ */

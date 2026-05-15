@@ -123,6 +123,18 @@ export async function PATCH(request: Request) {
   const session = await requireSession().catch(() => null);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Rate limit: 120 status updates per hour per user (generous but prevents abuse)
+  const patchRl = rateLimit(`invoice-patch:${session.userId}`, {
+    limit: 120,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (!patchRl.success) {
+    return NextResponse.json(
+      { error: "Too many requests. Please slow down." },
+      { status: 429 }
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();

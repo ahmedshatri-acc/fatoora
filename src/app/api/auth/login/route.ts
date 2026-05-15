@@ -58,6 +58,13 @@ export async function POST(request: Request) {
   }
 
   const user = rows[0];
+
+  // Session fixation prevention: destroy any existing session before creating a
+  // new one so that a pre-planted session cookie cannot be promoted to an
+  // authenticated session after login.
+  const existing = await getSession();
+  await existing.destroy();
+
   const session = await getSession();
   session.userId = user.id;
   session.email = user.email;

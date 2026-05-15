@@ -26,19 +26,25 @@ const securityHeaders = [
       "default-src 'self'",
       // Next.js requires 'unsafe-inline' for styles and inline scripts in dev;
       // in production you can tighten this further with nonces.
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      // 'unsafe-eval' is intentionally omitted — it enables eval() / Function()
+      // which is unnecessary and dangerous in a financial SaaS.
+      "script-src 'self' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob:",
       "font-src 'self'",
-      "connect-src 'self'",
+      // Allow fetch/XHR to Supabase (auth callback) and Stripe (checkout redirect)
+      "connect-src 'self' https://*.supabase.co https://api.stripe.com",
+      "frame-src https://js.stripe.com https://hooks.stripe.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
-      "form-action 'self'",
+      "form-action 'self' https://checkout.stripe.com",
     ].join("; "),
   },
 ];
 
 const nextConfig: NextConfig = {
+  // Enable gzip/brotli compression for all responses (improves Core Web Vitals / SEO)
+  compress: true,
   async headers() {
     return [
       {

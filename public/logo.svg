@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 60" width="220" height="60" role="img" aria-label="فاتورة">
+  <defs>
+    <linearGradient id="iconGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#059669"/>
+      <stop offset="100%" style="stop-color:#047857"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Icon mark: document with checkmark -->
+  <!-- Document base -->
+  <rect x="4" y="4" width="44" height="52" rx="6" ry="6" fill="url(#iconGrad)"/>
+
+  <!-- Folded corner ear (top-right) -->
+  <path d="M34 4 L48 18 L34 18 Z" fill="#047857" opacity="0.6"/>
+  <path d="M34 4 L48 18 L34 18 Z" fill="#065f46" opacity="0.4"/>
+
+  <!-- Document lines -->
+  <rect x="12" y="24" width="16" height="2.5" rx="1.25" fill="white" opacity="0.55"/>
+  <rect x="12" y="30" width="22" height="2.5" rx="1.25" fill="white" opacity="0.55"/>
+  <rect x="12" y="36" width="14" height="2.5" rx="1.25" fill="white" opacity="0.55"/>
+
+  <!-- Checkmark circle -->
+  <circle cx="34" cy="42" r="9" fill="white"/>
+  <circle cx="34" cy="42" r="7.5" fill="#059669"/>
+  <!-- Checkmark path -->
+  <polyline points="30,42 33,45.5 39,38.5" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Wordmark: فاتورة in Arabic -->
+  <!-- Using a clean sans-serif stack; the Arabic text is RTL naturally -->
+  <text
+    x="168"
+    y="40"
+    text-anchor="middle"
+    font-family="'Noto Sans Arabic', 'IBM Plex Arabic', 'Segoe UI', Arial, sans-serif"
+    font-size="26"
+    font-weight="700"
+    fill="#111827"
+    letter-spacing="0"
+  >فاتورة</text>
+</svg>
