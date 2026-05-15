@@ -75,7 +75,7 @@ export function Sidebar() {
       <aside className="hidden md:flex h-full w-56 flex-col border-r border-gray-100 bg-white shrink-0">
         <div className="flex items-center gap-2 border-b border-gray-100 px-4 py-4">
           <Receipt className="h-6 w-6 text-emerald-600" />
-          <span className="text-lg font-bold text-gray-900">فاتورة</span>
+          <span className="text-lg font-bold text-gray-900">وَثَق</span>
         </div>
         <NavContent />
       </aside>
@@ -84,7 +84,7 @@ export function Sidebar() {
       <div className="md:hidden fixed top-0 inset-x-0 z-30 flex items-center justify-between border-b border-gray-100 bg-white px-4 py-3">
         <div className="flex items-center gap-2">
           <Receipt className="h-6 w-6 text-emerald-600" />
-          <span className="text-lg font-bold text-gray-900">فاتورة</span>
+          <span className="text-lg font-bold text-gray-900">وَثَق</span>
         </div>
         <button
           onClick={() => setMobileOpen(true)}
@@ -113,7 +113,7 @@ export function Sidebar() {
         <div className="flex items-center justify-between border-b border-gray-100 px-4 py-4">
           <div className="flex items-center gap-2">
             <Receipt className="h-6 w-6 text-emerald-600" />
-            <span className="text-lg font-bold text-gray-900">فاتورة</span>
+            <span className="text-lg font-bold text-gray-900">وَثَق</span>
           </div>
           <button
             onClick={() => setMobileOpen(false)}

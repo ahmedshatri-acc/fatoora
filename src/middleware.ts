@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-const COOKIE_NAME = "fatoora_session";
+const COOKIE_NAME = "wathq_session";
 
 export function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get(COOKIE_NAME);

@@ -41,7 +41,7 @@ export default function LoginPage() {
           <div className="mb-4 flex justify-center">
             <div className="flex items-center gap-2">
               <Receipt className="h-7 w-7 text-emerald-600" />
-              <span className="text-2xl font-bold text-gray-900">فاتورة</span>
+              <span className="text-2xl font-bold text-gray-900">وَثَق</span>
             </div>
           </div>
           <h1 className="text-xl font-semibold text-gray-900">تسجيل الدخول</h1>

@@ -101,8 +101,8 @@ const plans = [
 const softwareApplicationSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "فاتورة — نظام الفوترة الإلكترونية المتوافق مع زاتكا",
-  alternateName: "Fatoora ZATCA E-Invoicing",
+  name: "Wathq — نظام الفوترة الإلكترونية المتوافق مع زاتكا",
+  alternateName: "Wathq ZATCA E-Invoicing",
   description:
     "برنامج فواتير سعودي متوافق مع زاتكا لإصدار فواتير ضريبية إلكترونية معتمدة للمستقلين والشركات الصغيرة. Saudi ZATCA compliant e-invoicing software with automatic QR code generation.",
   url: BASE_URL,
@@ -174,7 +174,7 @@ const faqSchema = {
 const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "فاتورة",
+  name: "Wathq",
   url: BASE_URL,
   logo: `${BASE_URL}/favicon.svg`,
   description: "نظام الفوترة الإلكترونية السعودي المتوافق مع زاتكا",
@@ -207,7 +207,7 @@ export default function LandingPage() {
           <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
             <div className="flex items-center gap-2">
               <Receipt className="h-6 w-6 text-emerald-600" aria-hidden="true" />
-              <span className="text-xl font-bold text-gray-900">فاتورة</span>
+              <span className="text-xl font-bold text-gray-900">Wathq</span>
             </div>
             <nav aria-label="القائمة الرئيسية">
               <div className="flex items-center gap-3">
@@ -410,7 +410,7 @@ export default function LandingPage() {
           <div className="mx-auto max-w-xl px-6 text-center">
             <h2 id="cta-heading" className="mb-4 text-2xl font-bold text-gray-900">ابدأ اليوم — مجانًا</h2>
             <p className="mb-8 text-gray-500">
-              انضم إلى المستقلين وأصحاب الأعمال الذين يستخدمون فاتورة — أفضل برنامج فواتير سعودي متوافق مع زاتكا.
+              انضم إلى المستقلين وأصحاب الأعمال الذين يستخدمون Wathq — أفضل برنامج فواتير سعودي متوافق مع زاتكا.
             </p>
             <div className="flex flex-col items-center gap-4">
               <Link
@@ -429,7 +429,7 @@ export default function LandingPage() {
         <footer className="border-t border-gray-100 py-8 text-center text-sm text-gray-400">
           <div className="flex items-center justify-center gap-2 mb-2">
             <Receipt className="h-4 w-4 text-emerald-600" aria-hidden="true" />
-            <span className="font-semibold text-gray-700">فاتورة</span>
+            <span className="font-semibold text-gray-700">Wathq</span>
           </div>
           <p className="mb-1">
             نظام فوترة إلكترونية سعودي متوافق مع زاتكا (ZATCA Compliant E-Invoicing)

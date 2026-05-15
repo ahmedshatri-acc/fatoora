@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 60" width="220" height="60" role="img" aria-label="فاتورة">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 60" width="220" height="60" role="img" aria-label="Wathq">
   <defs>
     <linearGradient id="iconGradDark" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#059669"/>
@@ -21,10 +21,10 @@
     x="168"
     y="40"
     text-anchor="middle"
-    font-family="'Noto Sans Arabic', 'IBM Plex Arabic', 'Segoe UI', Arial, sans-serif"
+    font-family="'Inter', 'Segoe UI', Arial, sans-serif"
     font-size="26"
     font-weight="700"
     fill="#ffffff"
-    letter-spacing="0"
-  >فاتورة</text>
+    letter-spacing="-0.5"
+  >Wathq</text>
 </svg>

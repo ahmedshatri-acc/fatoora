@@ -18,8 +18,8 @@ export const metadata: Metadata = {
     apple: "/favicon.svg",
   },
   title: {
-    default: "فاتورة | نظام الفوترة الإلكترونية المتوافق مع زاتكا",
-    template: "%s | فاتورة",
+    default: "Wathq | نظام الفوترة الإلكترونية المتوافق مع زاتكا",
+    template: "%s | Wathq",
   },
   description:
     "برنامج فواتير سعودي متوافق مع زاتكا — أصدر فاتورة ضريبية إلكترونية معتمدة مع رمز QR تلقائي. نظام فوترة للمستقلين والشركات الصغيرة. ZATCA e-invoicing software.",
@@ -34,9 +34,9 @@ export const metadata: Metadata = {
     "ZATCA compliant invoice",
     "e-invoicing Saudi Arabia",
   ],
-  authors: [{ name: "فاتورة", url: BASE_URL }],
-  creator: "فاتورة",
-  publisher: "فاتورة",
+  authors: [{ name: "Wathq", url: BASE_URL }],
+  creator: "Wathq",
+  publisher: "Wathq",
   robots: {
     index: true,
     follow: true,
@@ -49,11 +49,11 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "فاتورة | نظام الفوترة الإلكترونية المتوافق مع زاتكا",
+    title: "Wathq | نظام الفوترة الإلكترونية المتوافق مع زاتكا",
     description:
       "برنامج فواتير سعودي متوافق مع زاتكا — أصدر فاتورة ضريبية إلكترونية معتمدة مع رمز QR تلقائي. نظام فوترة للمستقلين والشركات الصغيرة.",
     url: BASE_URL,
-    siteName: "فاتورة",
+    siteName: "Wathq",
     locale: "ar_SA",
     type: "website",
     images: [
@@ -61,13 +61,13 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "فاتورة — نظام الفوترة الإلكترونية المتوافق مع زاتكا",
+        alt: "Wathq — نظام الفوترة الإلكترونية المتوافق مع زاتكا",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "فاتورة | الفوترة الإلكترونية المتوافقة مع زاتكا",
+    title: "Wathq | الفوترة الإلكترونية المتوافقة مع زاتكا",
     description:
       "برنامج فواتير سعودي — أصدر فاتورة ضريبية إلكترونية معتمدة مع رمز QR تلقائي. ZATCA compliant e-invoicing.",
     images: ["/og-image.png"],

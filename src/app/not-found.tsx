@@ -6,7 +6,7 @@ export default function NotFound() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4 text-center" dir="rtl">
       <div className="mb-6 flex items-center gap-2">
         <Receipt className="h-8 w-8 text-emerald-600" />
-        <span className="text-2xl font-bold text-gray-900">فاتورة</span>
+        <span className="text-2xl font-bold text-gray-900">وَثَق</span>
       </div>
 
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50">

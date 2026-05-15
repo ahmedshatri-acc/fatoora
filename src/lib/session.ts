@@ -8,7 +8,7 @@ export interface SessionData {
 }
 
 const sessionOptions = {
-  cookieName: "fatoora_session",
+  cookieName: "wathq_session",
   password: process.env.SESSION_SECRET!,
   cookieOptions: {
     // Only send cookie over HTTPS in production
