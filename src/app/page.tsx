@@ -426,15 +426,21 @@ export default function LandingPage() {
         </section>
 
         {/* Footer */}
-        <footer className="border-t border-gray-100 py-8 text-center text-sm text-gray-400">
-          <div className="flex items-center justify-center gap-2 mb-2">
+        <footer className="border-t border-gray-100 py-10 text-center text-sm text-gray-400">
+          <div className="flex items-center justify-center gap-2 mb-3">
             <Receipt className="h-4 w-4 text-emerald-600" aria-hidden="true" />
             <span className="font-semibold text-gray-700">Wathq</span>
           </div>
-          <p className="mb-1">
+          <p className="mb-4">
             نظام فوترة إلكترونية سعودي متوافق مع زاتكا (ZATCA Compliant E-Invoicing)
           </p>
-          <p>© {new Date().getFullYear()} جميع الحقوق محفوظة</p>
+          <nav aria-label="روابط القائمة السفلية" className="flex flex-wrap justify-center gap-x-6 gap-y-2 mb-4">
+            <Link href="/about" className="hover:text-gray-600 transition-colors">من نحن</Link>
+            <Link href="/privacy" className="hover:text-gray-600 transition-colors">سياسة الخصوصية</Link>
+            <Link href="/terms" className="hover:text-gray-600 transition-colors">شروط الخدمة</Link>
+            <Link href="/contact" className="hover:text-gray-600 transition-colors">تواصل معنا</Link>
+          </nav>
+          <p>© {new Date().getFullYear()} Wathq — جميع الحقوق محفوظة</p>
         </footer>
       </div>
     </>
