@@ -13,8 +13,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "primary", size = "md", loading, children, disabled, ...props }, ref) => {
     const variants = {
       primary: "bg-emerald-600 hover:bg-emerald-700 text-white",
-      secondary: "bg-white border border-gray-200 hover:bg-gray-50 text-gray-800",
-      ghost: "hover:bg-gray-100 text-gray-700",
+      secondary: "bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-100",
+      ghost: "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300",
       danger: "bg-red-600 hover:bg-red-700 text-white",
     };
     const sizes = {

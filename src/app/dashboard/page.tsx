@@ -31,8 +31,8 @@ export default async function DashboardPage() {
     <div>
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">مرحبًا، {firstName} 👋</h1>
-          <p className="text-sm text-gray-500 mt-1">إليك ملخص نشاطك</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">مرحبًا، {firstName} 👋</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">إليك ملخص نشاطك</p>
         </div>
         <Link href="/dashboard/invoices/new">
           <Button size="lg">+ فاتورة جديدة</Button>
@@ -42,17 +42,17 @@ export default async function DashboardPage() {
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm text-gray-500">إجمالي الفواتير</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">إجمالي الفواتير</span>
             <FileText className="h-5 w-5 text-gray-400" />
           </div>
-          <p className="text-2xl font-bold text-gray-900">{totalCount}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalCount}</p>
         </Card>
         <Card>
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm text-gray-500">الإيرادات المحصّلة</span>
             <TrendingUp className="h-5 w-5 text-emerald-500" />
           </div>
-          <p className="text-2xl font-bold text-gray-900">{formatSAR(totalRevenue)}</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{formatSAR(totalRevenue)}</p>
         </Card>
         <Card>
           <div className="flex items-center justify-between mb-3">
