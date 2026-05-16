@@ -18,6 +18,11 @@ const AccountUpdateSchema = z.object({
     .optional()
     .or(z.literal("").transform(() => null)),
   default_notes: z.string().max(2000).optional().or(z.literal("").transform(() => null)),
+  invoice_prefix: z
+    .string()
+    .regex(/^[A-Z0-9][A-Z0-9_-]{0,15}$/i, "Prefix must be 1–16 alphanumeric chars")
+    .optional()
+    .or(z.literal("").transform(() => null)),
 });
 
 export async function PUT(request: Request) {
@@ -39,7 +44,7 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
 
-  const { name, currentPassword, newPassword, default_seller_name, default_seller_vat, default_notes } = parsed.data;
+  const { name, currentPassword, newPassword, default_seller_name, default_seller_vat, default_notes, invoice_prefix } = parsed.data;
   const db = sql();
 
   // Password change: requires current password verification
@@ -62,23 +67,28 @@ export async function PUT(request: Request) {
     await s.save();
   }
 
-  // Profile defaults: any of these keys present (even null) → update
   const updatingDefaults =
-    default_seller_name !== undefined || default_seller_vat !== undefined || default_notes !== undefined;
+    default_seller_name !== undefined ||
+    default_seller_vat !== undefined ||
+    default_notes !== undefined ||
+    invoice_prefix !== undefined;
 
   if (updatingDefaults) {
+    const prefix = invoice_prefix ? invoice_prefix.toUpperCase() : null;
     await db`
-      INSERT INTO profiles (user_id, default_seller_name, default_seller_vat, default_notes)
+      INSERT INTO profiles (user_id, default_seller_name, default_seller_vat, default_notes, invoice_prefix)
       VALUES (
         ${session.userId},
         ${default_seller_name ?? null},
         ${default_seller_vat ?? null},
-        ${default_notes ?? null}
+        ${default_notes ?? null},
+        ${prefix}
       )
       ON CONFLICT (user_id) DO UPDATE SET
         default_seller_name = COALESCE(EXCLUDED.default_seller_name, profiles.default_seller_name),
         default_seller_vat = COALESCE(EXCLUDED.default_seller_vat, profiles.default_seller_vat),
-        default_notes = COALESCE(EXCLUDED.default_notes, profiles.default_notes)
+        default_notes = COALESCE(EXCLUDED.default_notes, profiles.default_notes),
+        invoice_prefix = COALESCE(EXCLUDED.invoice_prefix, profiles.invoice_prefix)
     `;
   }
 

@@ -4,12 +4,14 @@ import { notFound } from "next/navigation";
 import { InvoiceActions } from "@/components/InvoiceActions";
 import { InvoiceDisplay } from "@/components/InvoiceDisplay";
 import { getMessages } from "@/lib/locale";
+import { formatSAR } from "@/lib/zatca";
 import Link from "next/link";
 
 interface InvoiceRow {
   id: string;
   invoice_number: string;
   invoice_date: string;
+  due_date: string | null;
   seller_name: string;
   seller_vat: string;
   client_name: string;
@@ -18,6 +20,7 @@ interface InvoiceRow {
   subtotal: string;
   vat_amount: string;
   total_with_vat: string;
+  discount_amount: string;
   qr_data: string;
   notes: string | null;
   status: "draft" | "sent" | "paid";
@@ -30,23 +33,35 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
   const { locale, messages: t } = await getMessages();
   const db = sql();
 
-  const rows = await db<InvoiceRow[]>`
-    SELECT id, invoice_number, invoice_date, seller_name, seller_vat,
-           client_name, client_email, items, subtotal, vat_amount, total_with_vat,
-           qr_data, notes, status, share_token
-    FROM invoices WHERE id = ${id} AND user_id = ${session.userId} LIMIT 1
-  `;
+  const [rows, profileRows] = await Promise.all([
+    db<InvoiceRow[]>`
+      SELECT id, invoice_number, invoice_date, due_date, seller_name, seller_vat,
+             client_name, client_email, items, subtotal, vat_amount, total_with_vat,
+             discount_amount, qr_data, notes, status, share_token
+      FROM invoices WHERE id = ${id} AND user_id = ${session.userId} LIMIT 1
+    `,
+    db<{ logo_data: string | null }[]>`SELECT logo_data FROM profiles WHERE user_id = ${session.userId} LIMIT 1`,
+  ]);
   if (rows.length === 0) notFound();
   const inv = rows[0];
+  const logoData = profileRows[0]?.logo_data ?? null;
   const ti = t.dashboard.invoices;
 
-  const statusLabel = inv.status === "paid" ? ti.paid : inv.status === "sent" ? ti.sent : ti.draft;
-  const statusClass =
-    inv.status === "paid"
-      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
-      : inv.status === "sent"
-      ? "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
-      : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
+  const isOverdue = inv.status !== "paid" && inv.due_date && new Date(inv.due_date) < new Date();
+
+  const statusLabel = isOverdue ? ti.overdue : inv.status === "paid" ? ti.paid : inv.status === "sent" ? ti.sent : ti.draft;
+  const statusClass = isOverdue
+    ? "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400"
+    : inv.status === "paid"
+    ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
+    : inv.status === "sent"
+    ? "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
+    : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
+
+  const waMessage = ti.whatsappMessage
+    .replace("{number}", inv.invoice_number)
+    .replace("{amount}", formatSAR(Number(inv.total_with_vat)))
+    .replace("{url}", inv.share_token ? "" : "");
 
   return (
     <>
@@ -73,6 +88,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
             invoiceId={inv.id}
             currentStatus={inv.status}
             initialShareToken={inv.share_token}
+            whatsappMessageTemplate={waMessage}
             t={{
               markPaid: ti.markPaid,
               markSent: ti.markSent,
@@ -83,6 +99,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
               shareDesc: ti.shareDesc,
               shareGenerate: ti.shareGenerate,
               shareRevoke: ti.shareRevoke,
+              shareWhatsapp: ti.shareWhatsapp,
               print: ti.print,
               delete: ti.delete,
               deleteConfirm: ti.deleteConfirm,
@@ -91,7 +108,7 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
         </div>
 
         <div id="invoice-printable">
-          <InvoiceDisplay invoice={inv} locale={locale} t={ti} />
+          <InvoiceDisplay invoice={inv} logoData={logoData} locale={locale} t={ti} />
         </div>
       </div>
     </>

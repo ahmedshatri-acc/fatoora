@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 interface InvoiceRow {
   invoice_number: string;
   invoice_date: string;
+  due_date: string | null;
   seller_name: string;
   seller_vat: string;
   client_name: string;
@@ -18,8 +19,10 @@ interface InvoiceRow {
   subtotal: string;
   vat_amount: string;
   total_with_vat: string;
+  discount_amount: string;
   qr_data: string;
   notes: string | null;
+  logo_data: string | null;
 }
 
 export default async function SharedInvoicePage({ params }: { params: Promise<{ token: string }> }) {
@@ -29,9 +32,12 @@ export default async function SharedInvoicePage({ params }: { params: Promise<{ 
 
   const db = sql();
   const rows = await db<InvoiceRow[]>`
-    SELECT invoice_number, invoice_date, seller_name, seller_vat, client_name, client_email,
-           items, subtotal, vat_amount, total_with_vat, qr_data, notes
-    FROM invoices WHERE share_token = ${token} LIMIT 1
+    SELECT i.invoice_number, i.invoice_date, i.due_date, i.seller_name, i.seller_vat,
+           i.client_name, i.client_email, i.items, i.subtotal, i.vat_amount, i.total_with_vat,
+           i.discount_amount, i.qr_data, i.notes, p.logo_data
+    FROM invoices i
+    LEFT JOIN profiles p ON p.user_id = i.user_id
+    WHERE i.share_token = ${token} LIMIT 1
   `;
   if (rows.length === 0) notFound();
   const inv = rows[0];
@@ -48,7 +54,7 @@ export default async function SharedInvoicePage({ params }: { params: Promise<{ 
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-4 py-8">
-        <InvoiceDisplay invoice={inv} locale={locale} t={t.dashboard.invoices} />
+        <InvoiceDisplay invoice={inv} logoData={inv.logo_data} locale={locale} t={t.dashboard.invoices} />
       </main>
     </div>
   );

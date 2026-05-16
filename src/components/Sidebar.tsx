@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FileText, PlusCircle, Users, BarChart3, Settings, LogOut, Receipt, Menu, X } from "lucide-react";
+import { LayoutDashboard, FileText, PlusCircle, Users, Package, BarChart3, Settings, LogOut, Receipt, Menu, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useLocale } from "@/components/LocaleProvider";
@@ -20,6 +20,7 @@ function NavContent({ onClose }: { onClose?: () => void }) {
     { href: "/dashboard/invoices", label: t.sidebar.invoices, icon: FileText },
     { href: "/dashboard/invoices/new", label: t.sidebar.newInvoice, icon: PlusCircle },
     { href: "/dashboard/clients", label: t.sidebar.clients, icon: Users },
+    { href: "/dashboard/items", label: t.sidebar.items, icon: Package },
     { href: "/dashboard/reports", label: t.sidebar.reports, icon: BarChart3 },
     { href: "/dashboard/settings", label: t.sidebar.settings, icon: Settings },
   ];

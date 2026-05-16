@@ -21,6 +21,12 @@ interface SavedClient {
   vat_number: string | null;
 }
 
+interface SavedItem {
+  id: string;
+  name: string;
+  unit_price: number;
+}
+
 interface NewT {
   title: string;
   sellerCard: string;
@@ -50,6 +56,14 @@ interface NewT {
   errorItems: string;
   errorNetwork: string;
   errorGeneric: string;
+  pickItem: string;
+  saveItem: string;
+  dueDateLabel: string;
+  discountTitle: string;
+  discountAmount: string;
+  discountPercent: string;
+  discountFixed: string;
+  discountNone: string;
 }
 
 interface InvoicesT {
@@ -58,6 +72,7 @@ interface InvoicesT {
   subtotal: string;
   vatRow: string;
   grandTotal: string;
+  discountRow: string;
 }
 
 const DEFAULT_ITEM: LineItem = { description: "", qty: 1, unit_price: 0 };
@@ -65,12 +80,14 @@ const DEFAULT_ITEM: LineItem = { description: "", qty: 1, unit_price: 0 };
 export function NewInvoiceForm({
   defaults,
   clients,
+  savedItems,
   blocked,
   t,
   ti,
 }: {
   defaults: { sellerName: string; sellerVat: string; notes: string };
   clients: SavedClient[];
+  savedItems: SavedItem[];
   blocked: boolean;
   t: NewT;
   ti: InvoicesT;
@@ -87,21 +104,39 @@ export function NewInvoiceForm({
   const [clientEmail, setClientEmail] = useState("");
   const [saveClient, setSaveClient] = useState(false);
   const [items, setItems] = useState<LineItem[]>([{ ...DEFAULT_ITEM }]);
+  const [saveItems, setSaveItems] = useState(false);
   const [notes, setNotes] = useState(defaults.notes);
+  const [dueDate, setDueDate] = useState("");
+  const [discountType, setDiscountType] = useState<"none" | "percent" | "fixed">("none");
+  const [discountValue, setDiscountValue] = useState(0);
+
   const [clientSearch, setClientSearch] = useState("");
   const [showClients, setShowClients] = useState(false);
+  const [itemSearchIdx, setItemSearchIdx] = useState<number | null>(null);
 
-  const filtered = useMemo(() => {
+  const filteredClients = useMemo(() => {
     const q = clientSearch.trim().toLowerCase();
     if (!q) return clients.slice(0, 8);
     return clients.filter(c => c.name.toLowerCase().includes(q)).slice(0, 8);
   }, [clients, clientSearch]);
+
+  function filteredItems(idx: number) {
+    const q = items[idx]?.description?.trim().toLowerCase() ?? "";
+    if (!q) return savedItems.slice(0, 8);
+    return savedItems.filter(i => i.name.toLowerCase().includes(q)).slice(0, 8);
+  }
 
   function pickClient(c: SavedClient) {
     setClientName(c.name);
     setClientSearch(c.name);
     setClientEmail(c.email ?? "");
     setShowClients(false);
+  }
+  function pickItem(idx: number, item: SavedItem) {
+    const updated = [...items];
+    updated[idx] = { description: item.name, qty: updated[idx]?.qty || 1, unit_price: item.unit_price };
+    setItems(updated);
+    setItemSearchIdx(null);
   }
 
   function addItem() { setItems([...items, { ...DEFAULT_ITEM }]); }
@@ -112,7 +147,13 @@ export function NewInvoiceForm({
     setItems(updated);
   }
 
-  const subtotal = items.reduce((s, item) => s + item.qty * item.unit_price, 0);
+  const rawSubtotal = items.reduce((s, item) => s + item.qty * item.unit_price, 0);
+  const discountAmount = useMemo(() => {
+    if (discountType === "percent") return Math.min(rawSubtotal, rawSubtotal * Math.min(100, Math.max(0, discountValue)) / 100);
+    if (discountType === "fixed") return Math.min(rawSubtotal, Math.max(0, discountValue));
+    return 0;
+  }, [discountType, discountValue, rawSubtotal]);
+  const subtotal = rawSubtotal - discountAmount;
   const vat = calculateVat(subtotal);
   const total = calculateTotal(subtotal);
 
@@ -136,6 +177,7 @@ export function NewInvoiceForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           invoice_date: new Date().toISOString(),
+          due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
           seller_name: sellerName,
           seller_vat: sellerVat,
           client_name: finalClientName,
@@ -143,8 +185,11 @@ export function NewInvoiceForm({
           items,
           notes: notes || undefined,
           status,
+          discount_type: discountType !== "none" ? discountType : undefined,
+          discount_value: discountType !== "none" ? discountValue : undefined,
           save_as_default: saveAsDefault,
           save_client: saveClient,
+          save_items: saveItems,
         }),
       });
 
@@ -207,9 +252,9 @@ export function NewInvoiceForm({
                   onChange={(e) => { setClientSearch(e.target.value); setClientName(e.target.value); setShowClients(true); }}
                   required
                 />
-                {showClients && filtered.length > 0 && (
+                {showClients && filteredClients.length > 0 && (
                   <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg">
-                    {filtered.map(c => (
+                    {filteredClients.map(c => (
                       <li key={c.id}>
                         <button
                           type="button"
@@ -244,11 +289,29 @@ export function NewInvoiceForm({
               </div>
               {items.map((item, i) => (
                 <div key={i} className="grid grid-cols-12 gap-2 items-start">
-                  <div className="col-span-12 sm:col-span-6">
+                  <div className="col-span-12 sm:col-span-6 relative">
                     <input
                       className="w-full rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
                       placeholder={t.itemDescriptionPlaceholder} value={item.description}
-                      onChange={(e) => updateItem(i, "description", e.target.value)} />
+                      onFocus={() => setItemSearchIdx(i)}
+                      onBlur={() => setTimeout(() => setItemSearchIdx(prev => prev === i ? null : prev), 150)}
+                      onChange={(e) => { updateItem(i, "description", e.target.value); setItemSearchIdx(i); }} />
+                    {itemSearchIdx === i && filteredItems(i).length > 0 && (
+                      <ul className="absolute z-10 mt-1 w-full max-h-40 overflow-auto rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg">
+                        {filteredItems(i).map(si => (
+                          <li key={si.id}>
+                            <button
+                              type="button"
+                              onMouseDown={(e) => { e.preventDefault(); pickItem(i, si); }}
+                              className="block w-full text-start px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+                            >
+                              <span className="text-gray-900 dark:text-gray-100">{si.name}</span>
+                              <span className="ms-2 text-xs text-gray-400">{formatSAR(si.unit_price)}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                   <div className="col-span-4 sm:col-span-2">
                     <input
@@ -272,14 +335,60 @@ export function NewInvoiceForm({
                 </div>
               ))}
             </div>
-            <button type="button" onClick={addItem}
-              className="mt-4 flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors">
-              <Plus className="h-4 w-4" />{t.addItem}
-            </button>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <button type="button" onClick={addItem}
+                className="flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors">
+                <Plus className="h-4 w-4" />{t.addItem}
+              </button>
+              <label className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <input type="checkbox" checked={saveItems} onChange={(e) => setSaveItems(e.target.checked)} />
+                {t.saveItem}
+              </label>
+            </div>
+
+            <div className="mt-6 border-t border-gray-100 dark:border-gray-800 pt-4 space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t.discountTitle}</label>
+                <div className="flex gap-2">
+                  <select
+                    value={discountType}
+                    onChange={(e) => setDiscountType(e.target.value as "none" | "percent" | "fixed")}
+                    className="rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none"
+                  >
+                    <option value="none">{t.discountNone}</option>
+                    <option value="percent">{t.discountPercent}</option>
+                    <option value="fixed">{t.discountFixed}</option>
+                  </select>
+                  {discountType !== "none" && (
+                    <input
+                      type="number" min="0" step="0.01" dir="ltr"
+                      value={discountValue}
+                      onChange={(e) => setDiscountValue(Number(e.target.value))}
+                      placeholder={t.discountAmount}
+                      className="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                    />
+                  )}
+                </div>
+              </div>
+              <div>
+                <label htmlFor="due-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t.dueDateLabel}</label>
+                <input
+                  id="due-date" type="date" dir="ltr"
+                  value={dueDate} onChange={(e) => setDueDate(e.target.value)}
+                  className="rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                />
+              </div>
+            </div>
+
             <div className="mt-6 border-t border-gray-100 dark:border-gray-800 pt-4 space-y-2">
               <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
-                <span>{ti.subtotal}</span><span>{formatSAR(subtotal)}</span>
+                <span>{ti.subtotal}</span><span>{formatSAR(rawSubtotal)}</span>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-sm text-amber-700 dark:text-amber-400">
+                  <span>{ti.discountRow}</span><span>−{formatSAR(discountAmount)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
                 <span>{ti.vatRow}</span><span>{formatSAR(vat)}</span>
               </div>

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { Crown, CheckCircle2 } from "lucide-react";
+import { Crown, CheckCircle2, Upload, X } from "lucide-react";
 import { interpolate } from "@/lib/utils";
 
 interface SettingsT {
@@ -23,7 +23,15 @@ interface SettingsT {
   defaultSellerName: string;
   defaultSellerVat: string;
   defaultNotes: string;
+  invoicePrefix: string;
+  invoicePrefixHint: string;
   saveDefaults: string;
+  brandingTitle: string;
+  brandingDesc: string;
+  uploadLogo: string;
+  removeLogo: string;
+  logoSizeError: string;
+  logoTypeError: string;
   subscription: string;
   trial: string;
   trialDaysLeft: string;
@@ -43,6 +51,8 @@ interface Initial {
   defaultSellerName: string;
   defaultSellerVat: string;
   defaultNotes: string;
+  invoicePrefix: string;
+  logoData: string | null;
 }
 
 export function SettingsForm({ initial, t }: { initial: Initial; t: SettingsT }) {
@@ -52,10 +62,15 @@ export function SettingsForm({ initial, t }: { initial: Initial; t: SettingsT })
   const [sellerName, setSellerName] = useState(initial.defaultSellerName);
   const [sellerVat, setSellerVat] = useState(initial.defaultSellerVat);
   const [defaultNotes, setDefaultNotes] = useState(initial.defaultNotes);
+  const [invoicePrefix, setInvoicePrefix] = useState(initial.invoicePrefix);
+  const [logoData, setLogoData] = useState<string | null>(initial.logoData);
   const [accountBusy, setAccountBusy] = useState(false);
   const [defaultsBusy, setDefaultsBusy] = useState(false);
+  const [logoBusy, setLogoBusy] = useState(false);
   const [accountMsg, setAccountMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [defaultsMsg, setDefaultsMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [logoMsg, setLogoMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   async function saveAccount(e: React.FormEvent) {
     e.preventDefault();
@@ -94,10 +109,38 @@ export function SettingsForm({ initial, t }: { initial: Initial; t: SettingsT })
         default_seller_name: sellerName,
         default_seller_vat: sellerVat,
         default_notes: defaultNotes,
+        invoice_prefix: invoicePrefix,
       }),
     });
     setDefaultsMsg({ kind: res.ok ? "ok" : "err", text: res.ok ? t.savedOk : "Error" });
     setDefaultsBusy(false);
+  }
+
+  async function uploadLogo(file: File) {
+    setLogoBusy(true);
+    setLogoMsg(null);
+    const form = new FormData();
+    form.append("logo", file);
+    const res = await fetch("/api/account/logo", { method: "POST", body: form });
+    if (res.ok) {
+      const data = await res.json();
+      setLogoData(data.dataUrl);
+      setLogoMsg({ kind: "ok", text: t.savedOk });
+    } else {
+      const data = await res.json().catch(() => ({}));
+      const text = data.error === "file_too_large" ? t.logoSizeError
+        : data.error === "invalid_type" ? t.logoTypeError
+        : "Error";
+      setLogoMsg({ kind: "err", text });
+    }
+    setLogoBusy(false);
+  }
+
+  async function removeLogo() {
+    setLogoBusy(true);
+    const res = await fetch("/api/account/logo", { method: "DELETE" });
+    if (res.ok) setLogoData(null);
+    setLogoBusy(false);
   }
 
   return (
@@ -112,23 +155,10 @@ export function SettingsForm({ initial, t }: { initial: Initial; t: SettingsT })
             <div className="border-t border-gray-100 dark:border-gray-800 pt-4">
               <p className="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">{t.changePassword}</p>
               <div className="space-y-3">
-                <Input
-                  id="current-password"
-                  type="password"
-                  label={t.currentPassword}
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  dir="ltr"
-                />
-                <Input
-                  id="new-password"
-                  type="password"
-                  label={t.newPassword}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  minLength={8}
-                  dir="ltr"
-                />
+                <Input id="current-password" type="password" label={t.currentPassword}
+                  value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} dir="ltr" />
+                <Input id="new-password" type="password" label={t.newPassword}
+                  value={newPassword} onChange={(e) => setNewPassword(e.target.value)} minLength={8} dir="ltr" />
               </div>
             </div>
             {accountMsg && (
@@ -141,18 +171,50 @@ export function SettingsForm({ initial, t }: { initial: Initial; t: SettingsT })
         </Card>
 
         <Card>
+          <h2 className="mb-1 text-base font-semibold text-gray-900 dark:text-white">{t.brandingTitle}</h2>
+          <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t.brandingDesc}</p>
+          {logoData ? (
+            <div className="flex items-center gap-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={logoData} alt="Logo" className="h-16 w-auto max-w-[200px] rounded border border-gray-100 dark:border-gray-800 bg-white p-2 object-contain" />
+              <Button variant="secondary" onClick={removeLogo} loading={logoBusy}>
+                <X className="h-4 w-4" />{t.removeLogo}
+              </Button>
+            </div>
+          ) : (
+            <>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadLogo(f); }}
+              />
+              <Button variant="secondary" onClick={() => fileRef.current?.click()} loading={logoBusy}>
+                <Upload className="h-4 w-4" />{t.uploadLogo}
+              </Button>
+            </>
+          )}
+          {logoMsg && (
+            <p className={`mt-3 text-sm ${logoMsg.kind === "ok" ? "text-emerald-600" : "text-red-600"}`}>
+              {logoMsg.text}
+            </p>
+          )}
+        </Card>
+
+        <Card>
           <h2 className="mb-1 text-base font-semibold text-gray-900 dark:text-white">{t.defaultsTitle}</h2>
           <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">{t.defaultsDesc}</p>
           <form onSubmit={saveDefaults} className="space-y-4">
             <Input id="def-name" label={t.defaultSellerName} value={sellerName} onChange={(e) => setSellerName(e.target.value)} />
             <Input id="def-vat" label={t.defaultSellerVat} value={sellerVat} onChange={(e) => setSellerVat(e.target.value)} maxLength={15} dir="ltr" />
             <div>
+              <Input id="def-prefix" label={t.invoicePrefix} value={invoicePrefix} onChange={(e) => setInvoicePrefix(e.target.value.toUpperCase())} maxLength={16} dir="ltr" />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t.invoicePrefixHint}</p>
+            </div>
+            <div>
               <label htmlFor="def-notes" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">{t.defaultNotes}</label>
-              <textarea
-                id="def-notes"
-                value={defaultNotes}
-                onChange={(e) => setDefaultNotes(e.target.value)}
-                rows={3}
+              <textarea id="def-notes" value={defaultNotes} onChange={(e) => setDefaultNotes(e.target.value)} rows={3}
                 className="w-full rounded-lg border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
               />
             </div>

@@ -21,6 +21,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   default_seller_name TEXT,
   default_seller_vat TEXT,
   default_notes TEXT,
+  logo_data TEXT,
+  invoice_prefix TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -52,12 +54,25 @@ CREATE TABLE IF NOT EXISTS invoices (
   qr_data TEXT,
   notes TEXT,
   share_token TEXT UNIQUE,
+  due_date TIMESTAMPTZ,
+  discount_amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+  discount_type TEXT CHECK (discount_type IN ('percent', 'fixed')),
   status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'sent', 'paid')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS invoices_user_id_idx ON invoices(user_id);
 CREATE INDEX IF NOT EXISTS invoices_status_idx ON invoices(user_id, status);
+
+CREATE TABLE IF NOT EXISTS items (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  unit_price NUMERIC(12,2) NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS items_user_id_idx ON items(user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS items_user_name_idx ON items(user_id, lower(name));
 
 CREATE TABLE IF NOT EXISTS invoice_sequences (
   user_id UUID REFERENCES users(id) ON DELETE CASCADE PRIMARY KEY,

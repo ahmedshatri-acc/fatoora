@@ -8,6 +8,7 @@ import type { Messages } from "@/messages/ar";
 interface InvoiceData {
   invoice_number: string;
   invoice_date: string;
+  due_date?: string | null;
   seller_name: string;
   seller_vat: string;
   client_name: string;
@@ -16,30 +17,48 @@ interface InvoiceData {
   subtotal: number | string;
   vat_amount: number | string;
   total_with_vat: number | string;
+  discount_amount?: number | string | null;
   qr_data: string;
   notes: string | null;
 }
 
 export function InvoiceDisplay({
   invoice,
+  logoData,
   locale,
   t,
 }: {
   invoice: InvoiceData;
+  logoData?: string | null;
   locale: "ar" | "en";
   t: Messages["dashboard"]["invoices"];
 }) {
+  const discount = Number(invoice.discount_amount ?? 0);
+  const rawSubtotal = Number(invoice.subtotal) + discount;
+
   return (
     <Card>
-      <div className="mb-8 flex items-start justify-between">
-        <div className="flex items-center gap-2">
-          <Receipt className="h-6 w-6 text-emerald-600" />
-          <span className="text-xl font-bold text-gray-900 dark:text-white">{t.taxInvoice}</span>
+      <div className="mb-8 flex items-start justify-between gap-4">
+        <div className="flex items-center gap-3">
+          {logoData ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoData} alt="Logo" className="h-12 w-auto max-w-[160px] object-contain" />
+          ) : (
+            <>
+              <Receipt className="h-6 w-6 text-emerald-600" />
+              <span className="text-xl font-bold text-gray-900 dark:text-white">{t.taxInvoice}</span>
+            </>
+          )}
         </div>
         <div className="text-end">
           <p className="text-sm text-gray-500 dark:text-gray-400">{t.colNumber}</p>
           <p className="font-bold text-gray-900 dark:text-white">{invoice.invoice_number}</p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{formatDate(invoice.invoice_date, locale)}</p>
+          {invoice.due_date && (
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              {t.dueDate}: {formatDate(invoice.due_date, locale)}
+            </p>
+          )}
         </div>
       </div>
 
@@ -83,8 +102,13 @@ export function InvoiceDisplay({
         <InvoiceQR qrData={invoice.qr_data} caption="ZATCA QR" />
         <div className="min-w-48 space-y-2">
           <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
-            <span>{t.subtotal}</span><span>{formatSAR(Number(invoice.subtotal))}</span>
+            <span>{t.subtotal}</span><span>{formatSAR(discount > 0 ? rawSubtotal : Number(invoice.subtotal))}</span>
           </div>
+          {discount > 0 && (
+            <div className="flex justify-between text-sm text-amber-700 dark:text-amber-400">
+              <span>{t.discountRow}</span><span>−{formatSAR(discount)}</span>
+            </div>
+          )}
           <div className="flex justify-between text-sm text-gray-600 dark:text-gray-300">
             <span>{t.vatRow}</span><span>{formatSAR(Number(invoice.vat_amount))}</span>
           </div>

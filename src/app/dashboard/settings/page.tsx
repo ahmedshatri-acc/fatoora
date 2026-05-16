@@ -19,6 +19,8 @@ export default async function SettingsPage() {
         defaultSellerName: account?.defaultSellerName ?? "",
         defaultSellerVat: account?.defaultSellerVat ?? "",
         defaultNotes: account?.defaultNotes ?? "",
+        invoicePrefix: account?.invoicePrefix ?? "",
+        logoData: account?.logoData ?? null,
       }}
       t={t.dashboard.settings}
     />

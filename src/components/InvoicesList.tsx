@@ -15,6 +15,7 @@ export interface InvoiceRow {
   total_with_vat: string | number;
   status: "draft" | "sent" | "paid";
   created_at: string;
+  due_date: string | null;
   share_token: string | null;
 }
 
@@ -33,6 +34,7 @@ interface InvoicesListT {
   draft: string;
   sent: string;
   paid: string;
+  overdue: string;
   view: string;
   colNumber: string;
   colClient: string;
@@ -83,13 +85,18 @@ export function InvoicesList({
     if (res.ok) setRows(rows.filter(r => r.id !== id));
   }
 
-  function statusLabel(s: InvoiceRow["status"]) {
-    return s === "paid" ? t.paid : s === "sent" ? t.sent : t.draft;
+  function isOverdue(r: InvoiceRow) {
+    return r.status !== "paid" && r.due_date && new Date(r.due_date) < new Date();
   }
-  function statusClass(s: InvoiceRow["status"]) {
-    return s === "paid"
+  function statusLabel(r: InvoiceRow) {
+    if (isOverdue(r)) return t.overdue;
+    return r.status === "paid" ? t.paid : r.status === "sent" ? t.sent : t.draft;
+  }
+  function statusClass(r: InvoiceRow) {
+    if (isOverdue(r)) return "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-400";
+    return r.status === "paid"
       ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
-      : s === "sent"
+      : r.status === "sent"
       ? "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
       : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
   }
@@ -158,8 +165,8 @@ export function InvoicesList({
                       <td className="px-6 py-4 text-gray-600 dark:text-gray-300">{formatDate(inv.created_at, locale)}</td>
                       <td className="px-6 py-4 font-semibold text-gray-900 dark:text-white">{formatSAR(Number(inv.total_with_vat))}</td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusClass(inv.status)}`}>
-                          {statusLabel(inv.status)}
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusClass(inv)}`}>
+                          {statusLabel(inv)}
                         </span>
                       </td>
                       <td className="px-6 py-4 flex items-center gap-3 justify-end">
@@ -190,8 +197,8 @@ export function InvoicesList({
                   </Link>
                   <div className="flex flex-col items-end gap-1 ms-3">
                     <p className="text-sm font-bold text-gray-900 dark:text-white">{formatSAR(Number(inv.total_with_vat))}</p>
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusClass(inv.status)}`}>
-                      {statusLabel(inv.status)}
+                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusClass(inv)}`}>
+                      {statusLabel(inv)}
                     </span>
                     <button onClick={() => remove(inv.id)} className="text-gray-400 hover:text-red-600 mt-1">
                       <Trash2 className="h-4 w-4" />

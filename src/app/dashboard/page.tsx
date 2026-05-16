@@ -8,20 +8,44 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { getMessages } from "@/lib/locale";
 import { getAccountSnapshot, countInvoicesThisMonth } from "@/lib/account";
+import { RevenueChart } from "@/components/RevenueChart";
 
 export default async function DashboardPage() {
   const session = await requireSession();
   const { locale, messages: t } = await getMessages();
   const db = sql();
 
-  const [account, usedThisMonth, invoices, stats] = await Promise.all([
+  const [account, usedThisMonth, invoices, stats, chartRows] = await Promise.all([
     getAccountSnapshot(session.userId),
     countInvoicesThisMonth(session.userId),
     db`SELECT id, invoice_number, client_name, total_with_vat, status, created_at
        FROM invoices WHERE user_id = ${session.userId}
        ORDER BY created_at DESC LIMIT 5`,
     db`SELECT total_with_vat, status FROM invoices WHERE user_id = ${session.userId}`,
+    db<{ month: string; total: string }[]>`
+      SELECT to_char(date_trunc('month', invoice_date), 'YYYY-MM') AS month,
+             COALESCE(SUM(total_with_vat), 0)::text AS total
+      FROM invoices
+      WHERE user_id = ${session.userId}
+        AND status = 'paid'
+        AND invoice_date >= NOW() - INTERVAL '6 months'
+      GROUP BY date_trunc('month', invoice_date)
+    `,
   ]);
+
+  // Build a 6-month series anchored on current month
+  const monthsT = t.dashboard.reports.months;
+  const chart: { label: string; value: number }[] = [];
+  const now = new Date();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const row = chartRows.find(r => r.month === key);
+    chart.push({
+      label: monthsT[d.getMonth()].slice(0, 3),
+      value: row ? Number(row.total) : 0,
+    });
+  }
 
   const totalRevenue = stats.filter(i => i.status === "paid").reduce((s, i) => s + Number(i.total_with_vat), 0);
   const pendingCount = stats.filter(i => i.status === "sent").length;
@@ -99,6 +123,12 @@ export default async function DashboardPage() {
             <CheckCircle className="h-5 w-5 text-emerald-500" />
           </div>
           <p className="text-2xl font-bold text-gray-900 dark:text-white">{paidCount}</p>
+        </Card>
+      </div>
+
+      <div className="mb-8">
+        <Card>
+          <RevenueChart data={chart} title={t.dashboard.chartTitle} emptyLabel={t.dashboard.chartEmpty} />
         </Card>
       </div>
 

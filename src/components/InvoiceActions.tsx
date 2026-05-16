@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import { CheckCircle2, Send, Trash2, Share2, Printer, Copy, X } from "lucide-react";
+import { CheckCircle2, Send, Trash2, Share2, Printer, Copy, X, MessageCircle } from "lucide-react";
 
 interface InvoiceActionsT {
   markPaid: string;
@@ -15,6 +15,7 @@ interface InvoiceActionsT {
   shareDesc: string;
   shareGenerate: string;
   shareRevoke: string;
+  shareWhatsapp: string;
   print: string;
   delete: string;
   deleteConfirm: string;
@@ -24,11 +25,13 @@ export function InvoiceActions({
   invoiceId,
   currentStatus,
   initialShareToken,
+  whatsappMessageTemplate,
   t,
 }: {
   invoiceId: string;
   currentStatus: "draft" | "sent" | "paid";
   initialShareToken: string | null;
+  whatsappMessageTemplate: string;
   t: InvoiceActionsT;
 }) {
   const router = useRouter();
@@ -81,6 +84,24 @@ export function InvoiceActions({
     setTimeout(() => setCopied(false), 2000);
   }
 
+  async function shareWhatsapp() {
+    let token = shareToken;
+    if (!token) {
+      const res = await fetch(`/api/invoices/${invoiceId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "generate" }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      token = data.token;
+      setShareToken(token);
+    }
+    const url = `${window.location.origin}/i/${token}`;
+    const msg = whatsappMessageTemplate.replace(/\s*$/, "") + " " + url;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank", "noopener");
+  }
+
   async function remove() {
     if (!confirm(t.deleteConfirm)) return;
     setLoading(true);
@@ -102,6 +123,12 @@ export function InvoiceActions({
             <CheckCircle2 className="h-4 w-4" />{t.markPaid}
           </Button>
         )}
+        <button
+          onClick={shareWhatsapp}
+          className="flex items-center gap-2 rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-950 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900"
+        >
+          <MessageCircle className="h-4 w-4" />{t.shareWhatsapp}
+        </button>
         <button
           onClick={() => setShareOpen(true)}
           className="flex items-center gap-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"

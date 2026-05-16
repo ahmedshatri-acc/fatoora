@@ -16,6 +16,7 @@ const LineItemSchema = z.object({
 
 const InvoicePostSchema = z.object({
   invoice_date: z.string().datetime(),
+  due_date: z.string().datetime().optional().or(z.literal("").transform(() => undefined)),
   seller_name: z.string().min(1).max(200).trim(),
   seller_vat: z
     .string()
@@ -30,8 +31,11 @@ const InvoicePostSchema = z.object({
   items: z.array(LineItemSchema).min(1).max(100),
   notes: z.string().max(2000).optional(),
   status: z.enum(["draft", "sent"]),
+  discount_type: z.enum(["percent", "fixed"]).optional(),
+  discount_value: z.number().nonnegative().max(1_000_000_000).optional(),
   save_as_default: z.boolean().optional(),
   save_client: z.boolean().optional(),
+  save_items: z.boolean().optional(),
 });
 
 const InvoicePatchSchema = z.object({
@@ -39,7 +43,7 @@ const InvoicePatchSchema = z.object({
   status: z.enum(["draft", "sent", "paid"]),
 });
 
-async function nextInvoiceNumber(userId: string): Promise<string> {
+async function nextInvoiceNumber(userId: string, prefix: string | null): Promise<string> {
   const db = sql();
   const rows = await db`
     INSERT INTO invoice_sequences (user_id, last_seq)
@@ -50,7 +54,8 @@ async function nextInvoiceNumber(userId: string): Promise<string> {
   `;
   const seq: number = rows[0].last_seq;
   const year = new Date().getFullYear();
-  return `INV-${year}-${String(seq).padStart(5, "0")}`;
+  const p = prefix && /^[A-Z0-9][A-Z0-9_-]{0,15}$/i.test(prefix) ? prefix.toUpperCase() : "INV";
+  return `${p}-${year}-${String(seq).padStart(5, "0")}`;
 }
 
 export async function POST(request: Request) {
@@ -96,9 +101,19 @@ export async function POST(request: Request) {
 
   const data = parsed.data;
 
-  const subtotal = data.items.reduce((s, item) => s + item.qty * item.unit_price, 0);
-  const vat_amount = calculateVat(subtotal);
-  const total_with_vat = calculateTotal(subtotal);
+  const rawSubtotal = data.items.reduce((s, item) => s + item.qty * item.unit_price, 0);
+
+  let discountAmount = 0;
+  if (data.discount_type && data.discount_value && data.discount_value > 0) {
+    if (data.discount_type === "percent") {
+      discountAmount = Math.min(rawSubtotal, rawSubtotal * Math.min(100, data.discount_value) / 100);
+    } else {
+      discountAmount = Math.min(rawSubtotal, data.discount_value);
+    }
+  }
+  const discountedSubtotal = rawSubtotal - discountAmount;
+  const vat_amount = calculateVat(discountedSubtotal);
+  const total_with_vat = calculateTotal(discountedSubtotal);
   const vat_rate = 0.15;
 
   const qr_data = generateZatcaQRData({
@@ -109,20 +124,23 @@ export async function POST(request: Request) {
     vatAmount: vat_amount,
   });
 
-  const invoiceNumber = await nextInvoiceNumber(session.userId);
-
   const db = sql();
+  const prefRow = await db`SELECT invoice_prefix FROM profiles WHERE user_id = ${session.userId} LIMIT 1`;
+  const prefix: string | null = prefRow[0]?.invoice_prefix ?? null;
+  const invoiceNumber = await nextInvoiceNumber(session.userId, prefix);
+
   const rows = await db`
     INSERT INTO invoices (
-      user_id, invoice_number, invoice_date, seller_name, seller_vat,
+      user_id, invoice_number, invoice_date, due_date, seller_name, seller_vat,
       client_name, client_email, items, subtotal, vat_amount, total_with_vat,
-      vat_rate, qr_data, notes, status
+      vat_rate, qr_data, notes, status, discount_amount, discount_type
     ) VALUES (
-      ${session.userId}, ${invoiceNumber}, ${data.invoice_date},
+      ${session.userId}, ${invoiceNumber}, ${data.invoice_date}, ${data.due_date ?? null},
       ${data.seller_name}, ${data.seller_vat}, ${data.client_name},
       ${data.client_email ?? null}, ${JSON.stringify(data.items)},
-      ${subtotal}, ${vat_amount}, ${total_with_vat},
-      ${vat_rate}, ${qr_data}, ${data.notes ?? null}, ${data.status}
+      ${discountedSubtotal}, ${vat_amount}, ${total_with_vat},
+      ${vat_rate}, ${qr_data}, ${data.notes ?? null}, ${data.status},
+      ${discountAmount}, ${data.discount_type ?? null}
     ) RETURNING id, invoice_number
   `;
 
@@ -143,6 +161,17 @@ export async function POST(request: Request) {
       ON CONFLICT (user_id, lower(name)) DO UPDATE
         SET email = COALESCE(EXCLUDED.email, clients.email)
     `;
+  }
+
+  if (data.save_items) {
+    for (const item of data.items) {
+      await db`
+        INSERT INTO items (user_id, name, unit_price)
+        VALUES (${session.userId}, ${item.description}, ${item.unit_price})
+        ON CONFLICT (user_id, lower(name)) DO UPDATE
+          SET unit_price = EXCLUDED.unit_price
+      `;
+    }
   }
 
   return NextResponse.json({ id: rows[0].id, invoice_number: rows[0].invoice_number });
