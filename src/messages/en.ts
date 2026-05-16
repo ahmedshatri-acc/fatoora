@@ -318,7 +318,7 @@ export const en: Messages = {
       uploadLogo: "Upload Logo",
       removeLogo: "Remove Logo",
       logoSizeError: "Logo is too large (max 500KB)",
-      logoTypeError: "Unsupported file type (PNG, JPG, SVG only)",
+      logoTypeError: "Unsupported file type (PNG, JPG, WebP only)",
       subscription: "Subscription",
       trial: "You're on the free trial. Choose a plan to continue.",
       trialDaysLeft: "{n} days left in your free trial",

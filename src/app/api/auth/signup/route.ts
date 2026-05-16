@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { isSameOrigin } from "@/lib/csrf";
 import { z } from "zod";
 
 const SignupSchema = z.object({
@@ -12,11 +13,11 @@ const SignupSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  // Rate limit: 5 signups per hour per IP
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    "unknown";
-  const rl = rateLimit(`signup:${ip}`, { limit: 5, windowMs: 60 * 60 * 1000 });
+  if (!isSameOrigin(request)) {
+    return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
+  }
+
+  const rl = rateLimit(`signup:${clientIp(request)}`, { limit: 5, windowMs: 60 * 60 * 1000 });
   if (!rl.success) {
     return NextResponse.json(
       { error: "Too many signup attempts. Please try again later." },

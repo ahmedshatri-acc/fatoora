@@ -4,7 +4,9 @@ import { sql } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 
 const MAX_BYTES = 500 * 1024;
-const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/svg+xml", "image/webp"];
+// SVG excluded: can carry inline JS that executes when rendered in <object>/<iframe>
+// or via SVG <use> sinks. Raster only.
+const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
 export async function POST(request: Request) {
   const session = await requireSession().catch(() => null);

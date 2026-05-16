@@ -186,7 +186,7 @@ export function SettingsForm({ initial, t }: { initial: Initial; t: SettingsT })
               <input
                 ref={fileRef}
                 type="file"
-                accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                accept="image/png,image/jpeg,image/webp"
                 className="hidden"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadLogo(f); }}
               />

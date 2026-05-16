@@ -98,7 +98,9 @@ export function InvoiceActions({
       setShareToken(token);
     }
     const url = `${window.location.origin}/i/${token}`;
-    const msg = whatsappMessageTemplate.replace(/\s*$/, "") + " " + url;
+    const msg = whatsappMessageTemplate.includes("{url}")
+      ? whatsappMessageTemplate.replace("{url}", url)
+      : `${whatsappMessageTemplate.trimEnd()} ${url}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank", "noopener");
   }
 

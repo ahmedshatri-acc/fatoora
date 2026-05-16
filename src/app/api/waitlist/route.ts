@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { sql } from "@/lib/db";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
 import { z } from "zod";
 
 const WaitlistSchema = z.object({
@@ -9,10 +9,7 @@ const WaitlistSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  // Rate limit: 5 waitlist submissions per hour per IP
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const rl = rateLimit(`waitlist:${ip}`, { limit: 5, windowMs: 60 * 60 * 1000 });
+  const rl = rateLimit(`waitlist:${clientIp(request)}`, { limit: 5, windowMs: 60 * 60 * 1000 });
   if (!rl.success) {
     return NextResponse.json(
       { error: "Too many requests. Please try again later." },

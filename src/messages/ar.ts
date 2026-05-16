@@ -316,7 +316,7 @@ export const ar = {
       uploadLogo: "رفع شعار",
       removeLogo: "إزالة الشعار",
       logoSizeError: "حجم الشعار كبير جدًا (الحد الأقصى 500KB)",
-      logoTypeError: "نوع الملف غير مدعوم (PNG, JPG, SVG فقط)",
+      logoTypeError: "نوع الملف غير مدعوم (PNG, JPG, WebP فقط)",
       subscription: "الاشتراك",
       trial: "أنت على الفترة التجريبية المجانية. اختر خطتك للاستمرار.",
       trialDaysLeft: "متبقّي {n} يومًا من الفترة التجريبية",

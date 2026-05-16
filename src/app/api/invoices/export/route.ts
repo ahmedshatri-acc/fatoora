@@ -4,7 +4,10 @@ import { rateLimit } from "@/lib/rate-limit";
 
 function csvField(v: unknown): string {
   if (v === null || v === undefined) return "";
-  const s = String(v);
+  let s = String(v);
+  // Prevent CSV formula injection: prefix dangerous leading chars with a single quote
+  // so Excel/Sheets treat the cell as text, not as a formula.
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
   if (s.includes(",") || s.includes('"') || s.includes("\n")) {
     return `"${s.replace(/"/g, '""')}"`;
   }

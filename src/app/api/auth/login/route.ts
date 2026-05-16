@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { sql } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { rateLimit } from "@/lib/rate-limit";
+import { rateLimit, clientIp } from "@/lib/rate-limit";
+import { isSameOrigin } from "@/lib/csrf";
 import { z } from "zod";
 
 const LoginSchema = z.object({
@@ -10,12 +11,17 @@ const LoginSchema = z.object({
   password: z.string().min(1).max(256),
 });
 
+// Pre-computed real bcrypt hash so the no-such-user path takes the same wall
+// time as the real-user path — closes the user-enumeration timing oracle.
+// Computed at module load with rounds=12; value never matches any real password.
+const DUMMY_BCRYPT_HASH = bcrypt.hashSync("wathq-never-matches-anything", 12);
+
 export async function POST(request: Request) {
-  // Rate limit: 10 attempts per 15 minutes per IP
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    "unknown";
-  const rl = rateLimit(`login:${ip}`, { limit: 10, windowMs: 15 * 60 * 1000 });
+  if (!isSameOrigin(request)) {
+    return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
+  }
+
+  const rl = rateLimit(`login:${clientIp(request)}`, { limit: 10, windowMs: 15 * 60 * 1000 });
   if (!rl.success) {
     return NextResponse.json(
       { error: "Too many login attempts. Please try again later." },
@@ -47,10 +53,7 @@ export async function POST(request: Request) {
     SELECT id, email, name, password_hash FROM users WHERE email = ${email} LIMIT 1
   `;
 
-  // Constant-time path: always compare even when user not found to prevent timing attacks
-  const dummyHash =
-    "$2b$12$invalidhashpaddingthatisexactlythirtytwocharslong......";
-  const hashToCompare = rows.length > 0 ? (rows[0].password_hash as string) : dummyHash;
+  const hashToCompare = rows.length > 0 ? (rows[0].password_hash as string) : DUMMY_BCRYPT_HASH;
   const valid = await bcrypt.compare(password, hashToCompare);
 
   if (rows.length === 0 || !valid) {

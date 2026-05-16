@@ -58,10 +58,11 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
     ? "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
     : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
 
+  // {url} is filled in client-side by InvoiceActions after generating/loading
+  // a share token; here we only fill the static parts.
   const waMessage = ti.whatsappMessage
     .replace("{number}", inv.invoice_number)
-    .replace("{amount}", formatSAR(Number(inv.total_with_vat)))
-    .replace("{url}", inv.share_token ? "" : "");
+    .replace("{amount}", formatSAR(Number(inv.total_with_vat)));
 
   return (
     <>

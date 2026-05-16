@@ -36,6 +36,24 @@ export interface RateLimitResult {
   resetAt: number;
 }
 
+/**
+ * Best-effort client IP extraction for rate-limit keys.
+ *
+ * Trusts Vercel's x-real-ip and the right-most entry of x-forwarded-for
+ * (the value the platform appends), not the left-most user-supplied entry —
+ * a client can spoof the left edge to bypass per-IP limits.
+ */
+export function clientIp(request: Request): string {
+  const real = request.headers.get("x-real-ip")?.trim();
+  if (real) return real;
+  const fwd = request.headers.get("x-forwarded-for");
+  if (fwd) {
+    const parts = fwd.split(",").map(p => p.trim()).filter(Boolean);
+    if (parts.length > 0) return parts[parts.length - 1];
+  }
+  return "unknown";
+}
+
 export function rateLimit(key: string, options: RateLimitOptions): RateLimitResult {
   pruneExpired();
   const now = Date.now();
