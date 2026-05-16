@@ -39,7 +39,7 @@ export function LegalLayout({ title, children }: { title: string; children: Reac
 export function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-8">
-      <h2 className="mb-3 text-xl font-bold text-gray-900 border-r-4 border-emerald-500 pr-3">{title}</h2>
+      <h2 className="mb-3 text-xl font-bold text-gray-900 dark:text-white border-r-4 border-emerald-500 pr-3">{title}</h2>
       <div className="text-gray-600 dark:text-gray-300 leading-relaxed space-y-3">{children}</div>
     </section>
   );

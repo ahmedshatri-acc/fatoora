@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import QRCode from "qrcode";
 
-export function InvoiceQR({ qrData }: { qrData: string }) {
+export function InvoiceQR({ qrData, caption }: { qrData: string; caption?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -15,7 +15,7 @@ export function InvoiceQR({ qrData }: { qrData: string }) {
   return (
     <div className="flex flex-col items-center gap-1">
       <canvas ref={canvasRef} />
-      <p className="text-xs text-gray-400">رمز ZATCA</p>
+      <p className="text-xs text-gray-400 dark:text-gray-500">{caption ?? "ZATCA QR"}</p>
     </div>
   );
 }

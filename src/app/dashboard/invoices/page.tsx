@@ -2,109 +2,84 @@ import { requireSession } from "@/lib/session";
 import { sql } from "@/lib/db";
 import { Card } from "@/components/ui/Card";
 import { FileText } from "lucide-react";
-import { formatSAR } from "@/lib/zatca";
-import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { getMessages } from "@/lib/locale";
+import { InvoicesList, type InvoiceRow } from "@/components/InvoicesList";
 
-export default async function InvoicesPage() {
+const PAGE_SIZE = 20;
+
+export default async function InvoicesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; status?: string; page?: string }>;
+}) {
   const session = await requireSession();
+  const { locale, messages: t } = await getMessages();
+  const params = await searchParams;
+  const q = (params.q ?? "").trim();
+  const statusFilter = (params.status ?? "all").trim();
+  const page = Math.max(1, parseInt(params.page ?? "1", 10) || 1);
+  const offset = (page - 1) * PAGE_SIZE;
+
+  const validStatuses = ["draft", "sent", "paid"];
+  const useStatus = validStatuses.includes(statusFilter) ? statusFilter : null;
+  const searchLike = q.length > 0 ? `%${q}%` : null;
+
   const db = sql();
-  const invoices = await db`
-    SELECT * FROM invoices WHERE user_id = ${session.userId}
+  const statusCond = useStatus ? db`AND status = ${useStatus}` : db``;
+  const searchCond = searchLike
+    ? db`AND (invoice_number ILIKE ${searchLike} OR client_name ILIKE ${searchLike})`
+    : db``;
+
+  const rows = await db<InvoiceRow[]>`
+    SELECT id, invoice_number, client_name, total_with_vat, status, created_at, share_token
+    FROM invoices
+    WHERE user_id = ${session.userId} ${statusCond} ${searchCond}
     ORDER BY created_at DESC
+    LIMIT ${PAGE_SIZE} OFFSET ${offset}
   `;
 
-  const statusLabel = (s: string) =>
-    s === "paid" ? "مدفوعة" : s === "sent" ? "مرسلة" : "مسودة";
-  const statusClass = (s: string) =>
-    s === "paid"
-      ? "bg-emerald-50 text-emerald-700"
-      : s === "sent"
-      ? "bg-amber-50 text-amber-700"
-      : "bg-gray-100 text-gray-600";
+  const countRows = await db<{ c: number }[]>`
+    SELECT COUNT(*)::int AS c FROM invoices
+    WHERE user_id = ${session.userId} ${statusCond} ${searchCond}
+  `;
+  const totalCount = countRows[0]?.c ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  const hasFilters = q.length > 0 || useStatus !== null;
+  const empty = rows.length === 0;
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">الفواتير</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t.dashboard.invoices.title}</h1>
         <Link href="/dashboard/invoices/new">
-          <Button>+ فاتورة جديدة</Button>
+          <Button>{t.dashboard.invoices.newBtn}</Button>
         </Link>
       </div>
 
-      <Card className="p-0 overflow-hidden">
-        {invoices.length > 0 ? (
-          <>
-            {/* Desktop table */}
-            <div className="hidden sm:block overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="border-b border-gray-100 bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-right font-medium text-gray-500">رقم الفاتورة</th>
-                    <th className="px-6 py-3 text-right font-medium text-gray-500">العميل</th>
-                    <th className="px-6 py-3 text-right font-medium text-gray-500">التاريخ</th>
-                    <th className="px-6 py-3 text-right font-medium text-gray-500">الإجمالي</th>
-                    <th className="px-6 py-3 text-right font-medium text-gray-500">الحالة</th>
-                    <th className="px-6 py-3" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {invoices.map((inv) => (
-                    <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-gray-900">{inv.invoice_number}</td>
-                      <td className="px-6 py-4 text-gray-600">{inv.client_name}</td>
-                      <td className="px-6 py-4 text-gray-600">{formatDate(inv.created_at)}</td>
-                      <td className="px-6 py-4 font-semibold text-gray-900">{formatSAR(Number(inv.total_with_vat))}</td>
-                      <td className="px-6 py-4">
-                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusClass(inv.status)}`}>
-                          {statusLabel(inv.status)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <Link href={`/dashboard/invoices/${inv.id}`} className="text-emerald-600 hover:text-emerald-700 font-medium">
-                          عرض
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+      <InvoicesList
+        initial={rows}
+        totalPages={totalPages}
+        page={page}
+        q={q}
+        status={statusFilter}
+        locale={locale}
+        t={t.dashboard.invoices}
+      />
 
-            {/* Mobile card list */}
-            <div className="sm:hidden divide-y divide-gray-100">
-              {invoices.map((inv) => (
-                <Link
-                  key={inv.id}
-                  href={`/dashboard/invoices/${inv.id}`}
-                  className="flex items-center justify-between px-4 py-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">{inv.invoice_number}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{inv.client_name}</p>
-                    <p className="text-xs text-gray-400">{formatDate(inv.created_at)}</p>
-                  </div>
-                  <div className="text-left flex flex-col items-end gap-1">
-                    <p className="text-sm font-bold text-gray-900">{formatSAR(Number(inv.total_with_vat))}</p>
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusClass(inv.status)}`}>
-                      {statusLabel(inv.status)}
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </>
-        ) : (
+      {empty && !hasFilters && (
+        <Card className="mt-4">
           <div className="py-16 text-center">
-            <FileText className="mx-auto mb-3 h-10 w-10 text-gray-300" />
-            <p className="text-sm text-gray-500 mb-4">لا توجد فواتير بعد</p>
+            <FileText className="mx-auto mb-3 h-10 w-10 text-gray-300 dark:text-gray-700" />
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t.dashboard.invoices.empty}</p>
             <Link href="/dashboard/invoices/new">
-              <Button>أنشئ فاتورتك الأولى</Button>
+              <Button>{t.dashboard.invoices.createFirst}</Button>
             </Link>
           </div>
-        )}
-      </Card>
+        </Card>
+      )}
     </div>
   );
 }

@@ -18,9 +18,9 @@ export default async function LandingPage() {
   const softwareApplicationSchema = {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
-    name: "Wathq — نظام الفوترة الإلكترونية المتوافق مع زاتكا",
-    alternateName: "Wathq ZATCA E-Invoicing",
-    description: "برنامج فواتير سعودي متوافق مع زاتكا لإصدار فواتير ضريبية إلكترونية معتمدة. Saudi ZATCA compliant e-invoicing software.",
+    name: "Wathq — نظام فوترة إلكترونية برمز QR من زاتكا",
+    alternateName: "Wathq ZATCA QR E-Invoicing",
+    description: "برنامج فواتير سعودي مع رمز QR من زاتكا للفواتير المبسطة. Saudi e-invoicing software with ZATCA QR codes.",
     url: BASE_URL,
     applicationCategory: "BusinessApplication",
     operatingSystem: "Web",
@@ -52,7 +52,7 @@ export default async function LandingPage() {
     name: "Wathq",
     url: BASE_URL,
     logo: `${BASE_URL}/favicon.svg`,
-    description: "نظام الفوترة الإلكترونية السعودي المتوافق مع زاتكا",
+    description: "نظام فوترة إلكترونية سعودي برمز QR من زاتكا",
     areaServed: { "@type": "Country", name: "Saudi Arabia" },
   };
 
@@ -105,11 +105,14 @@ export default async function LandingPage() {
                 <Link href="/signup" className="rounded-xl bg-emerald-600 px-7 py-3.5 text-base font-semibold text-white hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-600/20 text-center">
                   {l.cta}
                 </Link>
-                <div className="flex items-center gap-4 text-sm text-gray-400 dark:text-gray-500">
-                  <span>✓ {l.trustCompliant}</span>
-                  <span>✓ {l.trustFree}</span>
-                  <span>✓ {l.trustNoCard}</span>
-                </div>
+                <Link href="/login?demo=1" className="text-sm font-medium text-emerald-600 hover:text-emerald-700 underline-offset-4 hover:underline text-center">
+                  {l.tryDemo}
+                </Link>
+              </div>
+              <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-400 dark:text-gray-500">
+                <span>✓ {l.trustCompliant}</span>
+                <span>✓ {l.trustFree}</span>
+                <span>✓ {l.trustNoCard}</span>
               </div>
             </div>
             <LiveDemo />
@@ -140,12 +143,12 @@ export default async function LandingPage() {
         <section className="py-16 bg-white dark:bg-slate-950">
           <div className="mx-auto max-w-4xl px-6 text-center">
             <h2 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
-              {locale === "ar" ? "فوترة إلكترونية متوافقة مع زاتكا" : "ZATCA-Compliant E-Invoicing"}
+              {locale === "ar" ? "رمز QR متوافق مع معيار زاتكا" : "ZATCA-Compatible QR Code"}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 leading-relaxed max-w-2xl mx-auto">
               {locale === "ar"
-                ? "نظام فوترة سعودي (ZATCA Invoice Software) مصمم خصيصًا لمتطلبات هيئة الزكاة والضريبة والجمارك. يدعم المرحلة الثانية من الفوترة الإلكترونية مع توليد رمز QR مشفّر لكل فاتورة ضريبية."
-                : "Saudi invoicing software (ZATCA Invoice Software) designed specifically for ZATCA requirements. Supports Phase 2 e-invoicing with encrypted QR code generation for every tax invoice."}
+                ? "كل فاتورة تتضمن رمز QR مشفّرًا وفق معيار TLV من هيئة الزكاة والضريبة والجمارك للفواتير المبسطة (B2C). للفوترة بين الشركات (B2B) المرحلة الثانية، يتطلب الأمر تكاملًا منفصلًا مع بوابة فاتورة."
+                : "Every invoice includes a TLV-encoded QR code per ZATCA's specification for simplified tax invoices (B2C). For B2B Phase 2 clearance/reporting, separate integration with the Fatoora portal is required."}
             </p>
           </div>
         </section>

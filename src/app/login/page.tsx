@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Receipt } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -12,6 +12,7 @@ import { LocaleSwitcher } from "@/components/LocaleSwitcher";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { t, dir } = useLocale();
   const l = t.auth.login;
 
@@ -19,6 +20,13 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("demo") === "1") {
+      setEmail("demo@wathq.sa");
+      setPassword("Demo@12345");
+    }
+  }, [searchParams]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -67,6 +75,9 @@ export default function LoginPage() {
         <p className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
           {l.noAccount}{" "}
           <Link href="/signup" className="font-medium text-emerald-600 hover:text-emerald-700">{l.signupLink}</Link>
+        </p>
+        <p className="mt-2 text-center text-xs text-gray-400 dark:text-gray-500">
+          <Link href="/login?demo=1" className="hover:text-emerald-600">{l.tryDemo}</Link>
         </p>
       </div>
     </div>

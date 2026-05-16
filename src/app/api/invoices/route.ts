@@ -3,9 +3,9 @@ import { requireSession } from "@/lib/session";
 import { sql } from "@/lib/db";
 import { rateLimit } from "@/lib/rate-limit";
 import { calculateVat, calculateTotal, generateZatcaQRData } from "@/lib/zatca";
+import { getAccountSnapshot, countInvoicesThisMonth } from "@/lib/account";
 import { z } from "zod";
 
-// Saudi VAT number: exactly 15 digits, starts with 3
 const SAT_VAT_RE = /^3\d{14}$/;
 
 const LineItemSchema = z.object({
@@ -30,6 +30,8 @@ const InvoicePostSchema = z.object({
   items: z.array(LineItemSchema).min(1).max(100),
   notes: z.string().max(2000).optional(),
   status: z.enum(["draft", "sent"]),
+  save_as_default: z.boolean().optional(),
+  save_client: z.boolean().optional(),
 });
 
 const InvoicePatchSchema = z.object({
@@ -55,7 +57,6 @@ export async function POST(request: Request) {
   const session = await requireSession().catch(() => null);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Rate limit: 60 invoice creations per hour per user
   const rl = rateLimit(`invoice-create:${session.userId}`, {
     limit: 60,
     windowMs: 60 * 60 * 1000,
@@ -65,6 +66,17 @@ export async function POST(request: Request) {
       { error: "Too many requests. Please slow down." },
       { status: 429 }
     );
+  }
+
+  // Enforce trial expiration and monthly plan cap
+  const account = await getAccountSnapshot(session.userId);
+  if (!account) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (account.access.blocked) {
+    return NextResponse.json({ error: "trial_expired" }, { status: 402 });
+  }
+  const usedThisMonth = await countInvoicesThisMonth(session.userId);
+  if (usedThisMonth >= account.access.monthlyLimit) {
+    return NextResponse.json({ error: "monthly_cap_reached" }, { status: 402 });
   }
 
   let body: unknown;
@@ -84,13 +96,11 @@ export async function POST(request: Request) {
 
   const data = parsed.data;
 
-  // Compute all financial values server-side — never trust client-supplied totals
   const subtotal = data.items.reduce((s, item) => s + item.qty * item.unit_price, 0);
   const vat_amount = calculateVat(subtotal);
   const total_with_vat = calculateTotal(subtotal);
   const vat_rate = 0.15;
 
-  // Regenerate QR data server-side from validated inputs
   const qr_data = generateZatcaQRData({
     sellerName: data.seller_name,
     vatNumber: data.seller_vat,
@@ -116,6 +126,25 @@ export async function POST(request: Request) {
     ) RETURNING id, invoice_number
   `;
 
+  if (data.save_as_default) {
+    await db`
+      INSERT INTO profiles (user_id, default_seller_name, default_seller_vat)
+      VALUES (${session.userId}, ${data.seller_name}, ${data.seller_vat})
+      ON CONFLICT (user_id) DO UPDATE
+        SET default_seller_name = EXCLUDED.default_seller_name,
+            default_seller_vat = EXCLUDED.default_seller_vat
+    `;
+  }
+
+  if (data.save_client) {
+    await db`
+      INSERT INTO clients (user_id, name, email)
+      VALUES (${session.userId}, ${data.client_name}, ${data.client_email ?? null})
+      ON CONFLICT (user_id, lower(name)) DO UPDATE
+        SET email = COALESCE(EXCLUDED.email, clients.email)
+    `;
+  }
+
   return NextResponse.json({ id: rows[0].id, invoice_number: rows[0].invoice_number });
 }
 
@@ -123,7 +152,6 @@ export async function PATCH(request: Request) {
   const session = await requireSession().catch(() => null);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // Rate limit: 120 status updates per hour per user (generous but prevents abuse)
   const patchRl = rateLimit(`invoice-patch:${session.userId}`, {
     limit: 120,
     windowMs: 60 * 60 * 1000,
@@ -150,7 +178,6 @@ export async function PATCH(request: Request) {
   const { id, status } = parsed.data;
   const db = sql();
 
-  // user_id check prevents IDOR — user can only update their own invoices
   const result = await db`
     UPDATE invoices SET status = ${status}, updated_at = NOW()
     WHERE id = ${id} AND user_id = ${session.userId}

@@ -1,38 +1,55 @@
 import { requireSession } from "@/lib/session";
 import { sql } from "@/lib/db";
 import { notFound } from "next/navigation";
-import { formatSAR } from "@/lib/zatca";
-import { formatDate } from "@/lib/utils";
-import { Card } from "@/components/ui/Card";
-import { Receipt } from "lucide-react";
-import { InvoiceQR } from "@/components/InvoiceQR";
-import { InvoiceStatusButtons } from "@/components/InvoiceStatusButtons";
-import { PrintButton } from "@/components/PrintButton";
+import { InvoiceActions } from "@/components/InvoiceActions";
+import { InvoiceDisplay } from "@/components/InvoiceDisplay";
+import { getMessages } from "@/lib/locale";
 import Link from "next/link";
+
+interface InvoiceRow {
+  id: string;
+  invoice_number: string;
+  invoice_date: string;
+  seller_name: string;
+  seller_vat: string;
+  client_name: string;
+  client_email: string | null;
+  items: Array<{ description: string; qty: number; unit_price: number }>;
+  subtotal: string;
+  vat_amount: string;
+  total_with_vat: string;
+  qr_data: string;
+  notes: string | null;
+  status: "draft" | "sent" | "paid";
+  share_token: string | null;
+}
 
 export default async function InvoicePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await requireSession();
+  const { locale, messages: t } = await getMessages();
   const db = sql();
 
-  const rows = await db`
-    SELECT * FROM invoices WHERE id = ${id} AND user_id = ${session.userId} LIMIT 1
+  const rows = await db<InvoiceRow[]>`
+    SELECT id, invoice_number, invoice_date, seller_name, seller_vat,
+           client_name, client_email, items, subtotal, vat_amount, total_with_vat,
+           qr_data, notes, status, share_token
+    FROM invoices WHERE id = ${id} AND user_id = ${session.userId} LIMIT 1
   `;
   if (rows.length === 0) notFound();
   const inv = rows[0];
+  const ti = t.dashboard.invoices;
 
-  const statusLabel =
-    inv.status === "paid" ? "مدفوعة" : inv.status === "sent" ? "مرسلة" : "مسودة";
+  const statusLabel = inv.status === "paid" ? ti.paid : inv.status === "sent" ? ti.sent : ti.draft;
   const statusClass =
     inv.status === "paid"
-      ? "bg-emerald-50 text-emerald-700"
+      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
       : inv.status === "sent"
-      ? "bg-amber-50 text-amber-700"
-      : "bg-gray-100 text-gray-600";
+      ? "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
+      : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400";
 
   return (
     <>
-      {/* Print-only global styles injected via a style tag */}
       <style>{`
         @media print {
           body * { visibility: hidden; }
@@ -42,98 +59,39 @@ export default async function InvoicePage({ params }: { params: Promise<{ id: st
       `}</style>
 
       <div className="mx-auto max-w-3xl">
-        {/* Header bar — hidden when printing */}
         <div className="print:hidden mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard/invoices" className="text-sm text-gray-500 hover:text-gray-700">
-              ← الفواتير
+          <div className="flex items-center gap-3 flex-wrap">
+            <Link href="/dashboard/invoices" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+              {ti.backToList}
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900">{inv.invoice_number}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{inv.invoice_number}</h1>
             <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusClass}`}>
               {statusLabel}
             </span>
           </div>
-          <div className="flex items-center gap-3">
-            <InvoiceStatusButtons
-              invoiceId={inv.id}
-              currentStatus={inv.status as "draft" | "sent" | "paid"}
-            />
-            <PrintButton />
-          </div>
+          <InvoiceActions
+            invoiceId={inv.id}
+            currentStatus={inv.status}
+            initialShareToken={inv.share_token}
+            t={{
+              markPaid: ti.markPaid,
+              markSent: ti.markSent,
+              markDraft: ti.markDraft,
+              share: ti.share,
+              shareCopied: ti.shareCopied,
+              shareTitle: ti.shareTitle,
+              shareDesc: ti.shareDesc,
+              shareGenerate: ti.shareGenerate,
+              shareRevoke: ti.shareRevoke,
+              print: ti.print,
+              delete: ti.delete,
+              deleteConfirm: ti.deleteConfirm,
+            }}
+          />
         </div>
 
         <div id="invoice-printable">
-          <Card>
-            <div className="mb-8 flex items-start justify-between">
-              <div className="flex items-center gap-2">
-                <Receipt className="h-6 w-6 text-emerald-600" />
-                <span className="text-xl font-bold text-gray-900">فاتورة ضريبية</span>
-              </div>
-              <div className="text-left">
-                <p className="text-sm text-gray-500">رقم الفاتورة</p>
-                <p className="font-bold text-gray-900">{inv.invoice_number}</p>
-                <p className="text-sm text-gray-500 mt-1">{formatDate(inv.invoice_date)}</p>
-              </div>
-            </div>
-
-            <div className="mb-8 grid grid-cols-2 gap-8">
-              <div>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">البائع</p>
-                <p className="font-semibold text-gray-900">{inv.seller_name}</p>
-                <p className="text-sm text-gray-500">الرقم الضريبي: {inv.seller_vat}</p>
-              </div>
-              <div className="text-left">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">العميل</p>
-                <p className="font-semibold text-gray-900">{inv.client_name}</p>
-                {inv.client_email && <p className="text-sm text-gray-500">{inv.client_email}</p>}
-              </div>
-            </div>
-
-            <div className="mb-8 overflow-x-auto">
-              <table className="w-full text-sm min-w-[400px]">
-                <thead>
-                  <tr className="border-b border-gray-100 text-gray-500">
-                    <th className="pb-3 text-right font-medium">الوصف</th>
-                    <th className="pb-3 text-center font-medium">الكمية</th>
-                    <th className="pb-3 text-left font-medium">سعر الوحدة</th>
-                    <th className="pb-3 text-left font-medium">الإجمالي</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {(inv.items as Array<{ description: string; qty: number; unit_price: number }>).map((item, i) => (
-                    <tr key={i}>
-                      <td className="py-3 text-gray-900">{item.description}</td>
-                      <td className="py-3 text-center text-gray-600">{item.qty}</td>
-                      <td className="py-3 text-left text-gray-600">{formatSAR(item.unit_price)}</td>
-                      <td className="py-3 text-left font-medium text-gray-900">{formatSAR(item.qty * item.unit_price)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-              <InvoiceQR qrData={inv.qr_data} />
-              <div className="min-w-48 space-y-2">
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>المجموع قبل الضريبة</span><span>{formatSAR(Number(inv.subtotal))}</span>
-                </div>
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>ضريبة القيمة المضافة (15%)</span><span>{formatSAR(Number(inv.vat_amount))}</span>
-                </div>
-                <div className="flex justify-between border-t border-gray-200 pt-2 text-base font-bold text-gray-900">
-                  <span>الإجمالي</span><span>{formatSAR(Number(inv.total_with_vat))}</span>
-                </div>
-              </div>
-            </div>
-
-            {inv.notes && (
-              <div className="mt-6 border-t border-gray-100 pt-4">
-                <p className="text-xs text-gray-500 mb-1">ملاحظات</p>
-                <p className="text-sm text-gray-700">{inv.notes}</p>
-              </div>
-            )}
-          </Card>
+          <InvoiceDisplay invoice={inv} locale={locale} t={ti} />
         </div>
       </div>
     </>

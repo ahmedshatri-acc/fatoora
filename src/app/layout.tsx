@@ -20,20 +20,20 @@ export const metadata: Metadata = {
     apple: "/favicon.svg",
   },
   title: {
-    default: "Wathq | نظام الفوترة الإلكترونية المتوافق مع زاتكا",
+    default: "Wathq | نظام فوترة إلكترونية برمز QR من زاتكا",
     template: "%s | Wathq",
   },
   description:
-    "برنامج فواتير سعودي متوافق مع زاتكا — أصدر فاتورة ضريبية إلكترونية معتمدة مع رمز QR تلقائي. نظام فوترة للمستقلين والشركات الصغيرة. ZATCA e-invoicing software.",
+    "برنامج فواتير سعودي مع رمز QR من زاتكا — أصدر فاتورة ضريبية إلكترونية مع رمز QR تلقائي للفواتير المبسطة. نظام فوترة للمستقلين والشركات الصغيرة. Saudi e-invoicing with ZATCA QR codes.",
   keywords: [
     "فوترة إلكترونية",
     "فاتورة ضريبية",
-    "فاتورة متوافقة زاتكا",
+    "رمز QR زاتكا",
     "نظام فوترة للمستقلين",
     "برنامج فواتير سعودي",
-    "zatca invoice software",
+    "zatca qr invoice",
     "saudi e-invoicing system",
-    "ZATCA compliant invoice",
+    "ZATCA QR code",
     "e-invoicing Saudi Arabia",
   ],
   authors: [{ name: "Wathq", url: BASE_URL }],
@@ -51,9 +51,9 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "Wathq | نظام الفوترة الإلكترونية المتوافق مع زاتكا",
+    title: "Wathq | نظام فوترة إلكترونية برمز QR من زاتكا",
     description:
-      "برنامج فواتير سعودي متوافق مع زاتكا — أصدر فاتورة ضريبية إلكترونية معتمدة مع رمز QR تلقائي. نظام فوترة للمستقلين والشركات الصغيرة.",
+      "برنامج فواتير سعودي مع رمز QR من زاتكا — أصدر فاتورة ضريبية إلكترونية مع رمز QR تلقائي للفواتير المبسطة. نظام فوترة للمستقلين والشركات الصغيرة.",
     url: BASE_URL,
     siteName: "Wathq",
     locale: "ar_SA",
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Wathq | الفوترة الإلكترونية المتوافقة مع زاتكا",
-    description: "برنامج فواتير سعودي — أصدر فاتورة ضريبية إلكترونية معتمدة مع رمز QR تلقائي. ZATCA compliant e-invoicing.",
+    description: "برنامج فواتير سعودي — أصدر فاتورة ضريبية إلكترونية مع رمز QR من زاتكا. Saudi e-invoicing with ZATCA QR codes.",
     images: ["/og-image.png"],
   },
   alternates: {
